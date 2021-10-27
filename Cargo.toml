@@ -1,0 +1,14 @@
+[package]
+name = "degeneric-macros"
+author = "Tomas Jasek <tomsik68@posteo.net>"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+convert_case = "0.4.0"
