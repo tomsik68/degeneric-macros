@@ -6,6 +6,7 @@ edition = "2018"
 
 [lib]
 proc-macro = true
+path = "src/lib.rs"
 
 [dependencies]
 syn = { version = "1", features = ["full"] }
