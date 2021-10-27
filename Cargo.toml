@@ -1,8 +1,15 @@
 [package]
 name = "degeneric-macros"
 author = "Tomas Jasek <tomsik68@posteo.net>"
+description = "Hides struct generics into trait associated types"
 version = "0.1.0"
 edition = "2018"
+license = "MIT"
+keywords = ["dependency-injection", "generics", "injection", "di"]
+readme = "README.md"
+homepage = "https://github.com/tomsik68/degeneric-macros"
+repository = "https://github.com/tomsik68/degeneric-macros"
+categories = ["rust-patterns"]
 
 [lib]
 proc-macro = true
