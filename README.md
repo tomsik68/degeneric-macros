@@ -1,3 +1,6 @@
+[![Rust build](https://github.com/tomsik68/degeneric-macros/actions/workflows/rust.yml/badge.svg)](https://github.com/tomsik68/degeneric-macros/actions/workflows/rust.yml)
+![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)
+
 # degeneric-macros
 
 ## Quick Start
