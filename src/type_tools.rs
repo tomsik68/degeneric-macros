@@ -120,6 +120,7 @@ fn tuple_to_associated_ty(tup: TypeTuple, generic_idents: &[&Ident]) -> TypeTupl
 fn arg_to_associated_ty(arg: GenericArgument, generic_idents: &[&Ident]) -> GenericArgument {
     match arg {
         GenericArgument::Type(ty) => GenericArgument::Type(to_associated_ty(ty, generic_idents)),
+        GenericArgument::Lifetime(lt) => GenericArgument::Lifetime(lt),
         _ => panic!("unexpected item found in angular bracketed generic arguments"),
     }
 }

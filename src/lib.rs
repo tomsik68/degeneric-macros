@@ -90,23 +90,25 @@
 //!
 //! ```
 //! use std::borrow::Cow;
+//! use std::fmt::Debug;
 //!
 //! use degeneric_macros::{Degeneric};
 //! use typed_builder::TypedBuilder;
 //!
 //! #[derive(Degeneric, TypedBuilder)]
-//! struct Container<'a, T> {
+//! struct Container<'a, T: 'a + PartialEq<i32> + Debug> {
 //!     cow: &'a Cow<'a, str>,
 //!     reference: &'a T,
 //! }
 //!
 //! let cow = Cow::Owned(String::from("hello lifetimes"));
 //! {
-//!     let reference = &();
-//!     let c = Container::builder().cow(cow).reference(reference).build();
+//!     let reference = 42;
+//!     let c = Container::builder().cow(&cow).reference(&reference).build();
 //!
 //!     fn accept_container<'a>(cont: &impl ContainerTrait<'a>) {
-//!         assert_eq!(cont.cow.as_ref(), "hello lifetimes");
+//!         assert_eq!(cont.cow().as_ref(), "hello lifetimes");
+//!         assert_eq!(*cont.reference(), &42_i32);
 //!     }
 //!
 //!     accept_container(&c);
