@@ -115,6 +115,31 @@
 //! }
 //! ```
 //!
+//! # Degeneric understands where clause
+//!
+//! ```
+//! use degeneric_macros::{Degeneric};
+//! use std::fmt::Debug;
+//!
+//! #[derive(Degeneric)]
+//! struct Container<T> where T: Default + Debug + PartialEq {
+//!     item: T,
+//! }
+//!
+//! let c = Container {
+//!     item: vec![""],
+//! };
+//!
+//! fn construct_default_value<C: ContainerTrait>(c: C) {
+//!     let v: C::T = Default::default();
+//!     assert_eq!(v, Default::default());
+//! }
+//!
+//! construct_default_value(c);
+//!
+//!
+//! ```
+//!
 //! # Crates degeneric plays nice with
 //!
 //! + [trait-set](https://lib.rs/trait-set) - shorten and DRY up trait bounds

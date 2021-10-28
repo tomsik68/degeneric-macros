@@ -3,10 +3,31 @@ use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::GenericParam;
 use syn::Generics;
+use syn::Ident;
 use syn::ItemStruct;
 use syn::Token;
+use syn::Type;
+use syn::WherePredicate;
 
 use crate::type_tools::*;
+
+fn ident_from_ty(ty: &Type) -> Option<&Ident> {
+    let path_ty = match ty {
+        Type::Path(path) => path,
+        _ => {
+            return None;
+        }
+    };
+
+    let mut segments = path_ty.path.segments.iter();
+    let one = segments.next().map(|ps| &ps.ident);
+    let last = segments.last();
+
+    match last {
+        Some(_) => None,
+        None => one,
+    }
+}
 
 pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
     let trait_name = format_ident!("{}Trait", strct.ident);
@@ -24,10 +45,28 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
     let generic_bounds: Vec<_> = strct
         .generics
         .type_params()
-        .map(|tp| &tp.bounds)
+        .map(|tp| {
+            let tp_ident = tp.ident.clone();
+            tp.bounds.iter().chain(
+                generics
+                    .where_clause
+                    .iter()
+                    .flat_map(|wh| wh.predicates.iter())
+                    .filter_map(move |pred| match pred {
+                        WherePredicate::Type(pt) => {
+                            if ident_from_ty(&pt.bounded_ty) == Some(&tp_ident) {
+                                Some(pt.bounds.iter())
+                            } else {
+                                None
+                            }
+                        }
+                        _ => None,
+                    })
+                    .flatten(),
+            )
+        })
         .map(|bounds| {
             bounds
-                .iter()
                 .cloned()
                 .map(|b| bound_to_associated_ty(b, &generic_idents))
                 .collect::<Punctuated<_, Token![+]>>()
@@ -67,6 +106,8 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
             .collect(),
     };
 
+    let impl_where = impl_generics.where_clause.clone();
+
     let lifetime_to_type_params = if !lifetimes.is_empty() && !generic_idents.is_empty() {
         quote! {,}
     } else {
@@ -85,7 +126,7 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
             )*
         }
 
-        impl #impl_generics #trait_name<#(#lifetimes),*> for #name <#(#lifetimes),* #lifetime_to_type_params #(#generic_idents),*> {
+        impl #impl_generics #trait_name<#(#lifetimes),*> for #name <#(#lifetimes),* #lifetime_to_type_params #(#generic_idents),*> #impl_where {
             #(
             type #generic_idents = #generic_idents;
             )*
