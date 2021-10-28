@@ -1,15 +1,12 @@
 [![GitHub license](https://img.shields.io/github/license/tomsik68/degeneric-macros?style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/blob/master/LICENSE)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/lint?style=for-the-badge)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/publish?label=publish&style=for-the-badge)
-![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/lint?style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/actions/workflows/rust.yml)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/publish?label=publish&style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/actions/workflows/publish.yml)
+[![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)](https://crates.io/crate/degeneric-macros)
+[![Crates.io (latest)](https://img.shields.io/crates/dv/degeneric-macros?style=for-the-badge)](https://crates.io/crate/degeneric-macros)
 
 # degeneric-macros
 
 ## Quick Start
-
-```toml
-degeneric-macros = "0.2.0"
-```
 
 ```rust
 use degeneric_macros::{Degeneric};
@@ -124,6 +121,31 @@ let cow = Cow::Owned(String::from("hello lifetimes"));
 
     accept_container(&c);
 }
+```
+
+## Degeneric understands where clause
+
+```rust
+use degeneric_macros::{Degeneric};
+use std::fmt::Debug;
+
+#[derive(Degeneric)]
+struct Container<T> where T: Default + Debug + PartialEq {
+    item: T,
+}
+
+let c = Container {
+    item: vec![""],
+};
+
+fn construct_default_value<C: ContainerTrait>(c: C) {
+    let v: C::T = Default::default();
+    assert_eq!(v, Default::default());
+}
+
+construct_default_value(c);
+
+
 ```
 
 ## Crates degeneric plays nice with
