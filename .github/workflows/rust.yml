@@ -1,6 +1,6 @@
-name: Rust
+name: Rust Lint
 
-on: [push]
+on: [push, release]
 
 jobs:
   build:

@@ -1,0 +1,17 @@
+name: Rust Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: icepuma/rust-action@master
+        env:
+          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        with:
+          args: cargo login $CRATES_IO_TOKEN && cargo build && cargo test && cargo publish
