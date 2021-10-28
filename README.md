@@ -1,4 +1,4 @@
-[![GitHub license](https://img.shields.io/github/license/tomsik68/degeneric-macros)](https://github.com/tomsik68/degeneric-macros/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/tomsik68/degeneric-macros?style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/blob/master/LICENSE)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/lint?style=for-the-badge)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/publish?label=publish&style=for-the-badge)
 ![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)
