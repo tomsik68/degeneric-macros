@@ -1,4 +1,4 @@
-name: Rust Publish
+name: publish
 
 on:
   release:

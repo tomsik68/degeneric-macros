@@ -1,4 +1,4 @@
-name: Rust Lint
+name: lint
 
 on: [push, release]
 
