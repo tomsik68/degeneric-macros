@@ -1,8 +1,8 @@
 [![GitHub license](https://img.shields.io/github/license/tomsik68/degeneric-macros?style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/blob/master/LICENSE)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/lint?style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/actions/workflows/rust.yml)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/tomsik68/degeneric-macros/publish?label=publish&style=for-the-badge)](https://github.com/tomsik68/degeneric-macros/actions/workflows/publish.yml)
-[![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)](https://crates.io/crate/degeneric-macros)
-[![Crates.io (latest)](https://img.shields.io/crates/dv/degeneric-macros?style=for-the-badge)](https://crates.io/crate/degeneric-macros)
+[![Crates.io](https://img.shields.io/crates/v/degeneric-macros?style=for-the-badge)](https://crates.io/crates/degeneric-macros)
+[![Crates.io (latest)](https://img.shields.io/crates/dv/degeneric-macros?style=for-the-badge)](https://crates.io/crates/degeneric-macros)
 
 # degeneric-macros
 
