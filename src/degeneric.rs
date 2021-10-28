@@ -48,23 +48,7 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
         .iter()
         .map(|ty| to_associated_ty((*ty).clone(), &generic_idents))
         .collect();
-    let setters: Vec<_> = field_idents
-        .iter()
-        .map(|id| format_ident!("with_{}", id))
-        .collect();
-    let initializers_without: Vec<_> = field_idents
-        .iter()
-        .map(|id| {
-            let to_init = field_idents.iter().filter(|id2| &id != id2);
-            quote! {
-                #(
-                    #to_init: self.#to_init
-                ),*
-            }
-        })
-        .collect();
     let name = &strct.ident;
-    let builder = format_ident!("{}Builder", name);
     let impl_generics = Generics {
         gt_token: generics.gt_token,
         lt_token: generics.lt_token,
@@ -90,13 +74,6 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
     };
 
     let r = quote! {
-        impl #impl_generics #name <#(#lifetimes),* #lifetime_to_type_params #(#generic_idents),*> {
-            pub fn builder() -> #builder <#(#lifetimes),* #(#generic_idents),*> {
-                Default::default()
-            }
-        }
-
-
         pub trait #trait_name<#(#lifetimes #lifetime_colons #lifetime_bounds),*> {
             #(
             type #generic_idents: #generic_bounds;
@@ -120,41 +97,6 @@ pub fn process_struct(strct: &ItemStruct) -> proc_macro2::TokenStream {
                 &mut self.#field_idents
             }
             )*
-        }
-
-        pub struct #builder #generics {
-            #(
-            #field_idents: Option<#field_types>
-            ),*
-        }
-
-        impl #impl_generics Default for #builder <#(#lifetimes),*#(#generic_idents),*> {
-            fn default() -> Self {
-                Self {
-                    #(
-                    #field_idents: None
-                    ),*
-                }
-            }
-        }
-
-        impl #impl_generics #builder <#(#lifetimes),* #lifetime_to_type_params #(#generic_idents),*> {
-            #(
-            pub fn #setters(self, val: #field_types) -> Self {
-                Self {
-                    #field_idents: Some(val),
-                    #initializers_without
-                }
-            }
-            )*
-
-            pub fn build(self) -> #name <#(#lifetimes),* #lifetime_to_type_params #(#generic_idents),*> {
-                #name {
-                    #(
-                    #field_idents: self.#field_idents.unwrap_or_else(|| panic!("degeneric: while building a {}, {} is required", stringify!(#name), stringify!(#field_idents)))
-                    ),*
-                }
-            }
         }
     };
     r

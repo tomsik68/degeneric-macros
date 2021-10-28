@@ -1,16 +1,20 @@
 //! # Quick Start
 //!
 //! ```
-//! use degeneric_macros::{Degeneric, named_requirement};
+//! use degeneric_macros::{Degeneric};
 //! use std::marker::PhantomData;
 //!
-//! named_requirement!(FactoryFn<T>: 'static + Send + Sync + Fn() -> T);
+//! use trait_set::trait_set;
+//! use typed_builder::TypedBuilder;
 //!
-//! #[derive(Degeneric)]
+//! trait_set!(trait FactoryFn<T> = 'static + Send + Sync + Fn() -> T);
+//!
+//! #[derive(Degeneric, TypedBuilder)]
 //! struct Container<T: Default, A: FactoryFn<T>, B> {
 //!     a: A,
 //!     b: B,
 //!     c: u32,
+//!     #[builder(default)]
 //!     _t: PhantomData<T>,
 //! }
 //!
@@ -18,15 +22,12 @@
 //!     format!("hello world!")
 //! }
 //!
-//! let c = Container::builder()
-//!     .with_a(my_fact)
-//!     .with_b(true)
-//!     .with_c(20)
-//!     .with__t(Default::default())
-//!     .build();
+//! let c = Container::builder().a(my_fact).b(true).c(20).build();
+//! do_something(&c);
+//! access_inner_types(&c);
 //!
-//! fn do_something(c: impl ContainerTrait) {}
-//! fn access_inner_types<C: ContainerTrait>(c: C) {
+//! fn do_something(c: &impl ContainerTrait) {}
+//! fn access_inner_types<C: ContainerTrait>(c: &C) {
 //!     let same_as_a: C::A;
 //! }
 //! ```
@@ -71,10 +72,10 @@
 //!     client: HttpClient,
 //! }
 //!
-//! let c = Container::builder()
-//!     .with_logger(String::from("logger"))
-//!     .with_client(String::from("http"))
-//!     .build();
+//! let c = Container {
+//!     logger: String::from("logger"),
+//!     client: String::from("http"),
+//! };
 //!
 //! accepts_container(c);
 //! fn accepts_container(c: impl ContainerTrait) {}
@@ -84,12 +85,44 @@
 //! the function without even using angular brackets and I think that's beautiful.
 //! What is even more beautiful is that you can add more generics without having to modify the
 //! signature of `accepts_container`.
+//!
+//! # Degeneric understands lifetimes
+//!
+//! ```
+//! use std::borrow::Cow;
+//!
+//! use degeneric_macros::{Degeneric};
+//! use typed_builder::TypedBuilder;
+//!
+//! #[derive(Degeneric, TypedBuilder)]
+//! struct Container<'a, T> {
+//!     cow: &'a Cow<'a, str>,
+//!     reference: &'a T,
+//! }
+//!
+//! let cow = Cow::Owned(String::from("hello lifetimes"));
+//! {
+//!     let reference = &();
+//!     let c = Container::builder().cow(cow).reference(reference).build();
+//!
+//!     fn accept_container<'a>(cont: &impl ContainerTrait<'a>) {
+//!         assert_eq!(cont.cow.as_ref(), "hello lifetimes");
+//!     }
+//!
+//!     accept_container(&c);
+//! }
+//! ```
+//!
+//! # Crates degeneric plays nice with
+//!
+//! + [trait-set](https://lib.rs/trait-set) - shorten and DRY up trait bounds
+//! + [typed-builder](https://lib.rs/typed-builder) - generate a builder for your trait
+//! + [easy-ext](https://lib.rs/easy-ext) - extend your trait with more methods
 use proc_macro::TokenStream;
 use syn::parse_macro_input;
 use syn::ItemStruct;
 
 mod degeneric;
-mod named_requirement;
 mod type_tools;
 
 #[proc_macro_derive(Degeneric)]
@@ -97,83 +130,33 @@ mod type_tools;
 ///
 /// Example:
 /// ```
-/// use degeneric_macros::{Degeneric, named_requirement};
+/// use degeneric_macros::Degeneric;
 ///
 /// use std::cmp::PartialEq;
 /// use std::fmt::Debug;
 ///
-/// named_requirement!(Peq<T>: PartialEq<T> + Debug);
-///
 /// #[derive(Degeneric)]
-/// struct Container<A: Peq<i32>, B: Peq<bool>> {
+/// struct Container<A: PartialEq<i32> + Debug, B: PartialEq<bool> + Debug> {
 ///     a: A,
 ///     b: B,
 ///     c: u32,
 /// }
 ///
-/// let c = Container::builder().with_a(10).with_b(true).with_c(42).build();
+/// let c = Container {
+///     a: 10,
+///     b: true,
+///     c: 42,
+/// };
+///
 /// test_container(c);
 /// fn test_container(c: impl ContainerTrait) {
 ///     assert_eq!(c.a(), &10);
+///     assert_eq!(c.b(), &true);
+///     assert_eq!(c.c(), &42);
 /// }
 /// ```
 pub fn degeneric(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
     let tokens = degeneric::process_struct(&input);
-    TokenStream::from(tokens)
-}
-
-#[proc_macro]
-/// This macro helps to create "named requirements".
-///
-/// Named requirements are traits without methods that can be used instead of naming the long chain
-/// of bounds.
-///
-/// Problem:
-/// ```
-/// struct FunctionStorage<F: 'static + Send + Sync + Sized + Fn() -> String> {
-///     f: F,
-/// }
-///
-/// impl<F: 'static + Send + Sync + Sized + Fn() -> String> FunctionStorage<F> {
-///     pub fn new(f: F) -> Self {
-///         Self { f }
-///     }
-/// }
-///
-/// fn accept_function_storage<F: 'static + Send + Sync + Sized + Fn() -> String>(f: FunctionStorage<F>) {}
-/// ```
-///
-/// Solution:
-/// ```
-/// use degeneric_macros::named_requirement;
-/// named_requirement!(Func: 'static + Send + Sync + Sized + Fn() -> String);
-///
-/// struct FunctionStorage<F: Func> {
-///     f: F,
-/// }
-///
-/// impl<F: Func> FunctionStorage<F> {
-///     pub fn new(f: F) -> Self {
-///         Self { f }
-///     }
-/// }
-///
-/// fn accept_function_storage<F: Func>(f: FunctionStorage<F>) {}
-/// ```
-///
-/// How it works in the background:
-/// ```
-/// use degeneric_macros::named_requirement;
-/// named_requirement!(Func: 'static + Send + Sync + Sized + Fn() -> String);
-/// // generates this:
-/// trait Func_ : 'static + Send + Sync + Sized + Fn() -> String {}
-/// impl<T: 'static + Send + Sync + Sized + Fn() -> String> Func_ for T {}
-/// ```
-///
-pub fn named_requirement(input: TokenStream) -> TokenStream {
-    use named_requirement::*;
-    let input = parse_macro_input!(input as NrInput);
-    let tokens = named_requirement::process_input(input);
     TokenStream::from(tokens)
 }
