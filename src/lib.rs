@@ -115,6 +115,89 @@
 //! }
 //! ```
 //!
+//! ## Degeneric can be used with galemu!
+//!
+//! If you're into hiding generics, you'll be surprised that the [galemu](https://crates.io/crates/galemu) crate makes it possible to
+//! hide even lifetimes!
+//!
+//! ```
+//! use std::fmt::Debug;
+//! use std::borrow::Cow;
+//! use std::ops::Deref;
+//!
+//! use degeneric_macros::Degeneric;
+//!
+//! use galemu::{Bound, BoundExt, create_gal_wrapper_type};
+//!
+//! // begin galemu
+//!
+//! struct Connection {
+//!     count: usize
+//! }
+//!
+//! struct Transaction<'conn> {
+//!     conn: &'conn mut Connection
+//! }
+//!
+//! impl Connection {
+//!     fn transaction(&mut self) -> Transaction {
+//!         Transaction { conn: self }
+//!     }
+//! }
+//!
+//! trait GCon {
+//!     type Transaction: GTran;
+//!
+//!     fn create_transaction(&mut self) -> Bound<Self::Transaction>;
+//! }
+//!
+//! trait GTran: for<'s> BoundExt<'s> {
+//!     fn commit<'s>(me: Bound<'s, Self>);
+//!     fn abort<'s>(me: Bound<'s, Self>);
+//! }
+//!
+//! create_gal_wrapper_type!{ struct TransWrap(Transaction<'a>); }
+//!
+//! impl GCon for Connection {
+//!     type Transaction = TransWrap;
+//!
+//!     fn create_transaction(&mut self) -> Bound<Self::Transaction> {
+//!         let transaction = self.transaction();
+//!         TransWrap::new(transaction)
+//!     }
+//! }
+//!
+//! impl GTran for TransWrap {
+//!     fn commit<'s>(me: Bound<'s, Self>) {
+//!         let trans = TransWrap::into_inner(me);
+//!         trans.conn.count += 10;
+//!     }
+//!
+//!     fn abort<'s>(me: Bound<'s, Self>) {
+//!         let trans = TransWrap::into_inner(me);
+//!         trans.conn.count += 3;
+//!     }
+//! }
+//!
+//! // end galemu
+//!
+//! #[derive(Degeneric)]
+//! struct Container<C: GCon> {
+//!     conn: C,
+//! }
+//!
+//! let cont = Container {
+//!     conn: Connection { count: 0 },
+//! };
+//!
+//! fn check_container(mut c: impl ContainerTrait) {
+//!     GTran::commit(c.conn_mut().create_transaction())
+//! }
+//!
+//! check_container(cont);
+//!
+//! ```
+//!
 //! # Degeneric understands where clause
 //!
 //! ```

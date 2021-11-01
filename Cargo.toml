@@ -23,3 +23,4 @@ proc-macro2 = "1"
 [dev-dependencies]
 trait-set = "0.2.0"
 typed-builder = "0.9.1"
+galemu = "0.2.3"
