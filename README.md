@@ -194,22 +194,23 @@ impl GTran for TransWrap {
 
 #[derive(Degeneric)]
 #[degeneric(trait = "pub trait ContainerTrait")]
-struct Container {
-    tran: TransWrap,
+struct Container<T: GCon> {
+    conn: T,
 }
 
 let conn = Connection { count : 0 };
 
 let cont = Container {
-    tran: TransWrap::new(conn.create_transaction()),
+    conn,
 };
 
-fn check_container(mut c: impl ContainerTrait) {
-    GTran::commit(c.conn_mut().create_transaction())
+fn commit_transaction(mut c: impl ContainerTrait) {
+    let conn = c.conn_mut();
+    let tran = conn.create_transaction();
+    GTran::commit(tran);
 }
 
-check_container(cont);
-
+commit_transaction(cont);
 ```
 
 ## Degeneric understands where clause
@@ -243,6 +244,8 @@ construct_default_value(c);
 The `no_getter` attribute can be used to skip generating a getter.
 
 ```compile_fail
+use degeneric_macros::{Degeneric};
+
 #[derive(Degeneric)]
 #[degeneric(trait = "pub(crate) trait Something")]
 struct Container<'a, T: 'a, S: 'a> {
@@ -270,6 +273,7 @@ Some fields may have mutable getters, some not. Degeneric recognizes immutable p
 references and skips generating mutable getter for them.
 
 ```rust
+use degeneric_macros::{Degeneric};
 #[derive(Degeneric)]
 #[degeneric(trait = "pub(crate) trait Something")]
 struct Container<'a, T> {
@@ -279,9 +283,10 @@ struct Container<'a, T> {
 
 let c = Container {
     x: &(),
+    y: (),
 };
 
-fn accept_container(c: impl Something) {
+fn accept_container<'a>(mut c: impl Something<'a>) {
     // OK
     c.x();
     c.y();
@@ -290,6 +295,8 @@ fn accept_container(c: impl Something) {
 ```
 
 ```compile_fail
+use degeneric_macros::{Degeneric};
+
 #[derive(Degeneric)]
 #[degeneric(trait = "pub(crate) trait Something")]
 struct Container<'a, T> {
@@ -300,7 +307,7 @@ let c = Container {
     x: &(),
 };
 
-fn accept_container(c: impl Something) {
+fn accept_container<'a>(c: impl Something<'a>) {
     // ERROR: x is a reference which can't be made mut
     c.x_mut();
 }
