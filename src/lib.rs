@@ -129,6 +129,16 @@
 //! If you're into hiding generics, you'll be surprised that the [galemu](https://crates.io/crates/galemu) crate makes it possible to
 //! hide even lifetimes!
 //!
+//! The way this example works is, that your Container contains an impl GCon. This object is able
+//! to produce [`galemu::Bound`]`<GCon::Transaction>`.
+//!
+//! The particular implementation of `GTran` is provided by [`galemu::create_gal_wrapper_type`].
+//! One must manually implement GTran on it.
+//!
+//! In principle, galemu lifts the lifetime of `Transaction<'a>` into the [`galemu::BoundExt`] trait.
+//! The lifetime inference happens in `Connection::transaction`. At that point, it's apparent that
+//! the connection's lifetime is passed to Transaction.
+//!
 //! ```
 //! use std::fmt::Debug;
 //! use std::borrow::Cow;
