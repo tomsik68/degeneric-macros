@@ -16,6 +16,7 @@
 //! trait_set!(trait FactoryFn<T> = 'static + Send + Sync + Fn() -> T);
 //!
 //! #[derive(Degeneric, TypedBuilder)]
+//! #[degeneric(trait = "pub trait ContainerTrait")]
 //! struct Container<T: Default, A: FactoryFn<T>, B> {
 //!     a: A,
 //!     b: B,
@@ -73,6 +74,7 @@
 //! use degeneric_macros::Degeneric;
 //!
 //! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub trait ContainerTrait")]
 //! struct Container<Logger, HttpClient> {
 //!     logger: Logger,
 //!     client: HttpClient,
@@ -102,6 +104,7 @@
 //! use typed_builder::TypedBuilder;
 //!
 //! #[derive(Degeneric, TypedBuilder)]
+//! #[degeneric(trait = "trait ContainerTrait")]
 //! struct Container<'a, T: 'a + PartialEq<i32> + Debug> {
 //!     cow: &'a Cow<'a, str>,
 //!     reference: &'a T,
@@ -114,7 +117,7 @@
 //!
 //!     fn accept_container<'a>(cont: &impl ContainerTrait<'a>) {
 //!         assert_eq!(cont.cow().as_ref(), "hello lifetimes");
-//!         assert_eq!(*cont.reference(), &42_i32);
+//!         assert_eq!(cont.reference(), &42_i32);
 //!     }
 //!
 //!     accept_container(&c);
@@ -188,12 +191,15 @@
 //! // end galemu
 //!
 //! #[derive(Degeneric)]
-//! struct Container<C: GCon> {
-//!     conn: C,
+//! #[degeneric(trait = "pub trait ContainerTrait")]
+//! struct Container {
+//!     tran: TransWrap,
 //! }
 //!
+//! let conn = Connection { count : 0 };
+//!
 //! let cont = Container {
-//!     conn: Connection { count: 0 },
+//!     tran: TransWrap::new(conn.create_transaction()),
 //! };
 //!
 //! fn check_container(mut c: impl ContainerTrait) {
@@ -211,6 +217,7 @@
 //! use std::fmt::Debug;
 //!
 //! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub trait ContainerTrait")]
 //! struct Container<T> where T: Default + Debug + PartialEq {
 //!     item: T,
 //! }
@@ -229,6 +236,74 @@
 //!
 //! ```
 //!
+//! # Generate getters only for some fields
+//!
+//! The `no_getter` attribute can be used to skip generating a getter.
+//!
+//! ```compile_fail
+//! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub(crate) trait Something")]
+//! struct Container<'a, T: 'a, S: 'a> {
+//!     item: &'a T,
+//!     item2: S,
+//!     #[degeneric(no_getter)]
+//!     dt: PhantomData<S>,
+//! }
+//!
+//! let c = Container {
+//!     item: "hello",
+//!     item2: format!("this won't have getter!"),
+//!     dt: PhantomData<S>,
+//! };
+//!
+//! fn accept_container<C: Something>(c: C) {
+//!     /// ERROR: item2 doesn't have a getter!
+//!     assert_eq!(c.dt(), format!("this won't have getter!"));
+//! }
+//! ```
+//!
+//! # Degeneric figures out mutability
+//!
+//! Some fields may have mutable getters, some not. Degeneric recognizes immutable pointers and
+//! references and skips generating mutable getter for them.
+//!
+//! ```
+//! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub(crate) trait Something")]
+//! struct Container<'a, T> {
+//!     x: &'a T,
+//!     y: T,
+//! }
+//!
+//! let c = Container {
+//!     x: &(),
+//! };
+//!
+//! fn accept_container(c: impl Something) {
+//!     // OK
+//!     c.x();
+//!     c.y();
+//!     c.y_mut();
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub(crate) trait Something")]
+//! struct Container<'a, T> {
+//!     x: &'a T,
+//! }
+//!
+//! let c = Container {
+//!     x: &(),
+//! };
+//!
+//! fn accept_container(c: impl Something) {
+//!     // ERROR: x is a reference which can't be made mut
+//!     c.x_mut();
+//! }
+//! ```
+//!
 //! # Crates degeneric plays nice with
 //!
 //! + [galemu](https://lib.rs/galemu) - hide lifetimes!
@@ -239,10 +314,11 @@ use proc_macro::TokenStream;
 use syn::parse_macro_input;
 use syn::ItemStruct;
 
+mod args;
 mod degeneric;
 mod type_tools;
 
-#[proc_macro_derive(Degeneric)]
+#[proc_macro_derive(Degeneric, attributes(degeneric))]
 /// Usable only on structs.
 ///
 /// Example:
@@ -253,6 +329,7 @@ mod type_tools;
 /// use std::fmt::Debug;
 ///
 /// #[derive(Degeneric)]
+/// #[degeneric(trait = "trait ContainerTrait")]
 /// struct Container<A: PartialEq<i32> + Debug, B: PartialEq<bool> + Debug> {
 ///     a: A,
 ///     b: B,
@@ -274,6 +351,6 @@ mod type_tools;
 /// ```
 pub fn degeneric(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
-    let tokens = degeneric::process_struct(&input);
+    let tokens = degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
     TokenStream::from(tokens)
 }

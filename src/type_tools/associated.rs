@@ -220,7 +220,7 @@ pub fn bound_to_associated_ty(bound: TypeParamBound, generic_idents: &[&Ident]) 
     }
 }
 
-pub fn type_path_to_associated_ty(tp: TypePath, generic_idents: &[&Ident]) -> TypePath {
+fn type_path_to_associated_ty(tp: TypePath, generic_idents: &[&Ident]) -> TypePath {
     TypePath {
         qself: tp.qself,
         path: path_to_associated_ty(tp.path, generic_idents),
