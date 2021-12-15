@@ -31,9 +31,8 @@ fn filter_fields<'a>(fields: impl IntoIterator<Item = &'a Field>) -> Result<Vec<
     'outer: for f in fields {
         let args = parse_degeneric_args(&f.attrs)?;
         for arg in args {
-            match arg {
-                DegenericArg::NoGetter => continue 'outer,
-                _ => {}
+            if let DegenericArg::NoGetter = arg {
+                continue 'outer;
             }
         }
         result.push(f);
@@ -49,10 +48,12 @@ fn extract_trait_decl(args: &[DegenericArg]) -> Result<&TraitDecl, Error> {
             _ => None,
         })
         .next()
-        .ok_or(Error::new(
-            proc_macro2::Span::call_site(),
-            "#[degeneric(trait = \"pub trait Something\")] attribute is required",
-        ))
+        .ok_or_else(|| {
+            Error::new(
+                proc_macro2::Span::call_site(),
+                "#[degeneric(trait = \"pub trait Something\")] attribute is required",
+            )
+        })
 }
 
 fn discover_type_param_bounds<'c, 'a: 'c, 'b: 'c>(
@@ -108,11 +109,7 @@ fn determine_trait_generics(generics: &Generics) -> Result<Vec<&GenericParam>, E
                 let attrs = parse_degeneric_args(&tp.attrs)?;
                 let preserved = attrs
                     .iter()
-                    .find(|attr| match attr {
-                        DegenericArg::PreserveGeneric => true,
-                        _ => false,
-                    })
-                    .is_some();
+                    .any(|x| matches!(x, DegenericArg::PreserveGeneric));
                 if preserved {
                     result.push(x);
                 }
@@ -132,11 +129,7 @@ fn determine_hidden_generics(generics: &Generics) -> Result<Vec<&GenericParam>, 
                 let attrs = parse_degeneric_args(&tp.attrs)?;
                 let preserved = attrs
                     .iter()
-                    .find(|attr| match attr {
-                        DegenericArg::PreserveGeneric => true,
-                        _ => false,
-                    })
-                    .is_some();
+                    .any(|x| matches!(x, DegenericArg::PreserveGeneric));
                 if !preserved {
                     result.push(x);
                 }

@@ -51,10 +51,9 @@ impl TryFrom<NestedMeta> for DegenericArg {
                     let key = nv
                         .path
                         .get_ident()
-                        .ok_or(Error::new(
-                            nv.path.span(),
-                            "attribute key must be a single identifier",
-                        ))?
+                        .ok_or_else(|| {
+                            Error::new(nv.path.span(), "attribute key must be a single identifier")
+                        })?
                         .to_string();
                     match key.as_ref() {
                         "trait" => Ok(Self::TraitDecl(TraitDecl::try_from(nv.lit)?)),
@@ -64,10 +63,9 @@ impl TryFrom<NestedMeta> for DegenericArg {
                 Meta::Path(pt) => {
                     let key = pt
                         .get_ident()
-                        .ok_or(Error::new(
-                            pt.span(),
-                            "attribute key must be a single identifier",
-                        ))?
+                        .ok_or_else(|| {
+                            Error::new(pt.span(), "attribute key must be a single identifier")
+                        })?
                         .to_string();
                     match key.as_ref() {
                         "no_getter" => Ok(Self::NoGetter),
