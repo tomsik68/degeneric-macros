@@ -3,7 +3,6 @@ use syn::parse::Parse;
 use syn::spanned::Spanned;
 use syn::{Attribute, Error, Ident, Lit, Meta, NestedMeta, Token, Visibility};
 
-#[derive(Debug)]
 pub struct TraitDecl {
     pub vis: Visibility,
     pub trait_kw: Token![trait],
@@ -34,7 +33,6 @@ impl Parse for TraitDecl {
     }
 }
 
-#[derive(Debug)]
 pub enum DegenericArg {
     TraitDecl(TraitDecl),
     NoGetter,
