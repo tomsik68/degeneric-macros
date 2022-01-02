@@ -2,6 +2,7 @@ use crate::args::{parse_degeneric_args, DegenericArg, TraitDecl};
 use crate::type_tools::*;
 use quote::format_ident;
 use quote::quote;
+use quote::quote_spanned;
 use syn::punctuated::Punctuated;
 use syn::Error;
 use syn::Field;
@@ -196,6 +197,51 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
     let trait_vis = &trait_decl.vis;
     let trait_name = &trait_decl.ident;
 
+    let getter_decls: Vec<_> = field_idents
+        .iter()
+        .zip(associated_field_types.iter())
+        .map(|(fi, aft)| {
+            quote_spanned! { fi.span() =>
+                fn #fi(&self) -> #aft;
+            }
+        })
+        .collect();
+
+    let getter_impls: Vec<_> = field_idents
+        .iter()
+        .zip(associated_field_types.iter())
+        .map(|(fi, aft)| {
+            quote_spanned! { fi.span() =>
+                fn #fi(&self) -> #aft {
+                    &self.#fi
+                }
+            }
+        })
+        .collect();
+
+    let mut_getter_decls: Vec<_> = getter_idents_mut
+        .iter()
+        .zip(associated_field_types_mut.iter())
+        .map(|(fi, aft)| {
+            quote_spanned! { fi.span() =>
+                fn #fi(&mut self) -> #aft;
+            }
+        })
+        .collect();
+
+    let mut_getter_impls: Vec<_> = getter_idents_mut
+        .iter()
+        .zip(associated_field_types_mut.iter())
+        .zip(mut_field_idents.iter())
+        .map(|((fi, aft), mfi)| {
+            quote_spanned! { fi.span() =>
+                fn #fi(&mut self) -> #aft {
+                    &mut self.#mfi
+                }
+            }
+        })
+        .collect();
+
     let r = quote! {
         #trait_vis trait #trait_name<#(#trait_generics),*> {
             #(
@@ -203,11 +249,11 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
             )*
 
             #(
-            fn #field_idents(&self) -> #associated_field_types;
+            #getter_decls
             )*
 
             #(
-            fn #getter_idents_mut(&mut self) -> #associated_field_types_mut;
+            #mut_getter_decls
             )*
 
         }
@@ -219,17 +265,14 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
             )*
 
             #(
-            fn #field_idents(&self) -> #associated_field_types {
-                &self.#field_idents
-            }
+            #getter_impls
             )*
 
             #(
-            fn #getter_idents_mut(&mut self) -> #associated_field_types_mut {
-                &mut self.#mut_field_idents
-            }
+            #mut_getter_impls
             )*
         }
     };
+
     Ok(r)
 }

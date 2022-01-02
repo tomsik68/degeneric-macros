@@ -270,7 +270,7 @@
 //! };
 //!
 //! fn accept_container<C: Something>(c: C) {
-//!     /// ERROR: item2 doesn't have a getter!
+//!     /// ERROR: dt doesn't have a getter!
 //!     assert_eq!(c.dt(), format!("this won't have getter!"));
 //! }
 //! ```
