@@ -19,6 +19,7 @@ trait_set!(trait FactoryFn<T> = 'static + Send + Sync + Fn() -> T);
 
 #[derive(Degeneric, TypedBuilder)]
 #[degeneric(trait = "pub trait ContainerTrait")]
+/// This is doc for ContainerTrait!
 struct Container<T: Default, A: FactoryFn<T>, B> {
     a: A,
     b: B,
@@ -272,7 +273,7 @@ let c = Container {
 };
 
 fn accept_container<C: Something>(c: C) {
-    /// ERROR: item2 doesn't have a getter!
+    /// ERROR: dt doesn't have a getter!
     assert_eq!(c.dt(), format!("this won't have getter!"));
 }
 ```
@@ -321,6 +322,30 @@ fn accept_container<'a>(c: impl Something<'a>) {
     // ERROR: x is a reference which can't be made mut
     c.x_mut();
 }
+```
+
+## Add attributes everywhere!
+
+Here are some examples of the supported attributes:
+
+- `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
+- `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
+- `#[degeneric(getter_decl_impl_attr = "#[doc = \"Getter declaration & implementation\"])]`
+- `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
+
+```compile_fail
+use degeneric_macros::Degeneric;
+
+#[derive(Degeneric)]
+#[degeneric(trait = "pub(crate) trait Something")]
+#[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
+struct Container<T> {
+    x: T,
+}
+
+// this will error because the Something trait exists only in the foo configuration
+#[cfg(not(foo))]
+fn accept_container(c: impl Something) {}
 ```
 
 ## Crates degeneric plays nice with
