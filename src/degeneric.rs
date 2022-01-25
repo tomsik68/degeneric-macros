@@ -91,7 +91,7 @@ fn extract_attrs(args: &[DegenericArg], scope: AttributeScope) -> Vec<&Attribute
 }
 
 fn extract_doc(args: &[Attribute]) -> Option<&Attribute> {
-    args.into_iter().find(|attr| attr.path.is_ident("doc"))
+    args.iter().find(|attr| attr.path.is_ident("doc"))
 }
 
 fn discover_type_param_bounds<'c, 'a: 'c, 'b: 'c>(
