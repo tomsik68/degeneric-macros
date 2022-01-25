@@ -17,6 +17,7 @@
 //!
 //! #[derive(Degeneric, TypedBuilder)]
 //! #[degeneric(trait = "pub trait ContainerTrait")]
+//! /// This is doc for ContainerTrait!
 //! struct Container<T: Default, A: FactoryFn<T>, B> {
 //!     a: A,
 //!     b: B,
@@ -321,6 +322,30 @@
 //! }
 //! ```
 //!
+//! # Add attributes everywhere!
+//!
+//! Here are some examples of the supported attributes:
+//!
+//! - `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
+//! - `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
+//! - `#[degeneric(getter_decl_impl_attr = "#[doc = \"Getter declaration & implementation\"])]`
+//! - `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
+//!
+//! ```compile_fail
+//! use degeneric_macros::Degeneric;
+//!
+//! #[derive(Degeneric)]
+//! #[degeneric(trait = "pub(crate) trait Something")]
+//! #[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
+//! struct Container<T> {
+//!     x: T,
+//! }
+//!
+//! // this will error because the Something trait exists only in the foo configuration
+//! #[cfg(not(foo))]
+//! fn accept_container(c: impl Something) {}
+//! ```
+//!
 //! # Crates degeneric plays nice with
 //!
 //! + [galemu](https://lib.rs/galemu) - hide lifetimes!
@@ -347,7 +372,12 @@ mod type_tools;
 ///
 /// #[derive(Degeneric)]
 /// #[degeneric(trait = "trait ContainerTrait")]
-/// struct Container<A: PartialEq<i32> + Debug, B: PartialEq<bool> + Debug> {
+/// // attribute for both trait declaration and trait impl
+/// #[degeneric(trait_impl_attr = "#[cfg(not(foo))]")]
+/// /// ContainerTrait contains the implementation of `A` and `B` types.
+/// struct Container<
+///     /** The A type is the more important one. */ A: PartialEq<i32> + Debug,
+///     /** You could live without B I guess. */ B: PartialEq<bool> + Debug> {
 ///     a: A,
 ///     b: B,
 ///     c: u32,

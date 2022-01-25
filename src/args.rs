@@ -17,7 +17,7 @@ impl TryFrom<Lit> for TraitDecl {
             Lit::Str(ref s) => Ok(s.parse().map_err(|e| Error::new(lit.span(), e))?),
             _ => Err(Error::new(
                 lit.span(),
-                "unknown literal type in trait declaration. should be #[degeneric(trait = \"pub trait Something\")]",
+                "unknown literal type in `trait`. Should be #[degeneric(trait = \"pub trait Something\")]",
             )),
         }
     }
@@ -33,10 +33,45 @@ impl Parse for TraitDecl {
     }
 }
 
+pub struct Attr(pub Vec<Attribute>);
+
+impl Parse for Attr {
+    fn parse(pb: &syn::parse::ParseBuffer<'_>) -> Result<Self, syn::Error> {
+        let attrs = pb.call(Attribute::parse_outer)?;
+        Ok(Self(attrs))
+    }
+}
+
+impl TryFrom<Lit> for Attr {
+    type Error = Error;
+
+    fn try_from(lit: Lit) -> Result<Self, Self::Error> {
+        match lit {
+            Lit::Str(ref s) => s
+                .parse()
+                .map_err(|e| Error::new(lit.span(), format!("Failed to parse attribute: {:?}", e))),
+            _ => Err(Error::new(lit.span(), "unknown literal type in trait_attr")),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub enum AttributeScope {
+    TraitDecl,
+    TraitImpl,
+
+    GetterDecl,
+    GetterImpl,
+
+    MutGetterDecl,
+    MutGetterImpl,
+}
+
 pub enum DegenericArg {
     TraitDecl(TraitDecl),
     NoGetter,
     PreserveGeneric,
+    Attr(Attr, Vec<AttributeScope>),
 }
 
 impl TryFrom<NestedMeta> for DegenericArg {
@@ -55,7 +90,43 @@ impl TryFrom<NestedMeta> for DegenericArg {
                         .to_string();
                     match key.as_ref() {
                         "trait" => Ok(Self::TraitDecl(TraitDecl::try_from(nv.lit)?)),
-                        _ => Err(Error::new(nv.path.span(), "unrecognized property")),
+                        "trait_decl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::TraitDecl],
+                        )),
+                        "trait_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::TraitImpl],
+                        )),
+                        "trait_decl_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::TraitDecl, AttributeScope::TraitImpl],
+                        )),
+                        "getter_decl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::GetterDecl],
+                        )),
+                        "getter_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::GetterImpl],
+                        )),
+                        "getter_decl_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::GetterDecl, AttributeScope::GetterImpl],
+                        )),
+                        "mut_getter_decl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::MutGetterDecl],
+                        )),
+                        "mut_getter_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::MutGetterImpl],
+                        )),
+                        "mut_getter_decl_impl_attr" => Ok(Self::Attr(
+                            Attr::try_from(nv.lit)?,
+                            vec![AttributeScope::MutGetterDecl, AttributeScope::MutGetterImpl],
+                        )),
+                        _ => Err(Error::new(nv.path.span(), "unrecognized meta")),
                     }
                 }
                 Meta::Path(pt) => {

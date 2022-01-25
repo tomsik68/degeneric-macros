@@ -1,9 +1,10 @@
-use crate::args::{parse_degeneric_args, DegenericArg, TraitDecl};
+use crate::args::{parse_degeneric_args, Attr, AttributeScope, DegenericArg, TraitDecl};
 use crate::type_tools::*;
 use quote::format_ident;
 use quote::quote;
 use quote::quote_spanned;
 use syn::punctuated::Punctuated;
+use syn::Attribute;
 use syn::Error;
 use syn::Field;
 use syn::GenericParam;
@@ -55,6 +56,42 @@ fn extract_trait_decl(args: &[DegenericArg]) -> Result<&TraitDecl, Error> {
                 "#[degeneric(trait = \"pub trait Something\")] attribute is required",
             )
         })
+}
+
+fn extract_attrs_owned(args: Vec<DegenericArg>, scope: AttributeScope) -> Vec<Attribute> {
+    args.into_iter()
+        .flat_map(|arg| match arg {
+            DegenericArg::Attr(Attr(attr), scopes) => {
+                if scopes.iter().any(|sc| sc == &scope) {
+                    Some(attr)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect()
+}
+
+fn extract_attrs(args: &[DegenericArg], scope: AttributeScope) -> Vec<&Attribute> {
+    args.iter()
+        .flat_map(|arg| match arg {
+            DegenericArg::Attr(Attr(attr), scopes) => {
+                if scopes.iter().any(|sc| sc == &scope) {
+                    Some(attr)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect()
+}
+
+fn extract_doc(args: &[Attribute]) -> Option<&Attribute> {
+    args.into_iter().find(|attr| attr.path.is_ident("doc"))
 }
 
 fn discover_type_param_bounds<'c, 'a: 'c, 'b: 'c>(
@@ -146,19 +183,26 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
     let args = parse_degeneric_args(&strct.attrs)?;
     let trait_decl = extract_trait_decl(&args)?;
 
+    let trait_doc = extract_doc(&strct.attrs);
+    let trait_attrs = extract_attrs(&args, AttributeScope::TraitDecl);
+    let impl_attrs = extract_attrs(&args, AttributeScope::TraitImpl);
+
     let generics = &strct.generics;
     let filtered_fields = filter_fields(strct.fields.iter())?;
 
     let trait_generics = determine_trait_generics(&strct.generics)?;
 
     let hidden_generics = determine_hidden_generics(&strct.generics)?;
-    let generic_idents: Vec<_> = hidden_generics
+    let generic_types: Vec<_> = hidden_generics
         .iter()
         .flat_map(|gp| match gp {
-            GenericParam::Type(tp) => Some(&tp.ident),
+            GenericParam::Type(tp) => Some(tp),
             _ => None,
         })
         .collect();
+    let generics_attrs: Vec<&Vec<_>> = generic_types.iter().map(|ty| &ty.attrs).collect();
+    let generic_idents: Vec<_> = generic_types.iter().map(|tp| &tp.ident).collect();
+
     let generic_bounds =
         determine_generic_bounds(&hidden_generics, &strct.generics, &generic_idents);
 
@@ -176,6 +220,7 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
         .filter(|field| can_be_made_mutable(&field.ty))
         .map(|field| format_ident!("{}_mut", field.ident.as_ref().unwrap()))
         .collect();
+
     let field_types: Vec<_> = filtered_fields.iter().map(|field| &field.ty).collect();
 
     let associated_field_types: Vec<_> = field_types
@@ -207,6 +252,27 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
         })
         .collect();
 
+    let getter_decl_attrs: Result<Vec<_>, Error> = filtered_fields
+        .iter()
+        .map(|f| parse_degeneric_args(f.attrs.as_slice()))
+        .map(|deg_args| deg_args.map(|x| extract_attrs_owned(x, AttributeScope::GetterDecl)))
+        .collect();
+
+    let getter_decl_attrs = getter_decl_attrs?;
+
+    let getter_impl_attrs: Result<Vec<_>, Error> = filtered_fields
+        .iter()
+        .map(|f| parse_degeneric_args(f.attrs.as_slice()))
+        .map(|deg_args| deg_args.map(|x| extract_attrs_owned(x, AttributeScope::GetterImpl)))
+        .collect();
+
+    let getter_impl_attrs = getter_impl_attrs?;
+
+    let getter_docs: Vec<_> = filtered_fields
+        .iter()
+        .map(|f| extract_doc(f.attrs.as_slice()))
+        .collect();
+
     let getter_impls: Vec<_> = field_idents
         .iter()
         .zip(associated_field_types.iter())
@@ -229,6 +295,28 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
         })
         .collect();
 
+    let mut_getter_decl_attrs: Result<Vec<_>, Error> = filtered_fields
+        .iter()
+        .filter(|field| can_be_made_mutable(&field.ty))
+        .map(|f| parse_degeneric_args(f.attrs.as_slice()))
+        .map(|deg_args| deg_args.map(|x| extract_attrs_owned(x, AttributeScope::MutGetterDecl)))
+        .collect();
+    let mut_getter_decl_attrs = mut_getter_decl_attrs?;
+
+    let mut_getter_impl_attrs: Result<Vec<_>, Error> = filtered_fields
+        .iter()
+        .filter(|field| can_be_made_mutable(&field.ty))
+        .map(|f| parse_degeneric_args(f.attrs.as_slice()))
+        .map(|deg_args| deg_args.map(|x| extract_attrs_owned(x, AttributeScope::MutGetterImpl)))
+        .collect();
+    let mut_getter_impl_attrs = mut_getter_impl_attrs?;
+
+    let mut_getter_docs: Vec<_> = filtered_fields
+        .iter()
+        .filter(|field| can_be_made_mutable(&field.ty))
+        .map(|f| extract_doc(f.attrs.as_slice()))
+        .collect();
+
     let mut_getter_impls: Vec<_> = getter_idents_mut
         .iter()
         .zip(associated_field_types_mut.iter())
@@ -243,32 +331,56 @@ pub fn process_struct(strct: &ItemStruct) -> Result<proc_macro2::TokenStream, Er
         .collect();
 
     let r = quote! {
+        #(
+        #trait_attrs
+        )*
+        #trait_doc
         #trait_vis trait #trait_name<#(#trait_generics),*> {
             #(
+            #(
+            #generics_attrs
+            )*
             type #generic_idents: #generic_bounds;
             )*
 
             #(
+            #(
+            #getter_decl_attrs
+            )*
+            #getter_docs
             #getter_decls
             )*
 
             #(
+            #(
+            #mut_getter_decl_attrs
+            )*
+            #mut_getter_docs
             #mut_getter_decls
             )*
 
         }
 
         #[automatically_derived]
+        #(
+        #impl_attrs
+        )*
         impl #impl_generics #trait_name<#(#trait_generics),*> for #name #ty_generics #where_clause {
             #(
             type #generic_idents = #generic_idents;
             )*
 
             #(
+            #(
+            #getter_impl_attrs
+            )*
             #getter_impls
             )*
 
             #(
+            #(
+            #mut_getter_impl_attrs
+            )*
             #mut_getter_impls
             )*
         }
