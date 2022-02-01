@@ -1,6 +1,6 @@
 name: lint
 
-on: [push, release]
+on: [push]
 
 jobs:
   build:
