@@ -16,11 +16,7 @@ pub fn can_be_made_mutable(ty: &Type) -> bool {
 
 pub fn make_reference(ty: Type, mutability: Option<Token![mut]>) -> Result<Type, Error> {
     match ty {
-        Type::Reference(rf) => Ok(Type::Reference(TypeReference {
-            mutability,
-            lifetime: None,
-            ..rf
-        })),
+        Type::Reference(rf) => Ok(Type::Reference(TypeReference { mutability, ..rf })),
         x @ Type::Never(_) => Ok(x),
         Type::Ptr(ptr) => Ok(Type::Ptr(TypePtr { mutability, ..ptr })),
         Type::Paren(tp) => Ok(Type::Paren(TypeParen {
