@@ -274,6 +274,8 @@
 //!     /// ERROR: dt doesn't have a getter!
 //!     assert_eq!(c.dt(), format!("this won't have getter!"));
 //! }
+//!
+//! accept_container(c);
 //! ```
 //!
 //! # Degeneric figures out mutability
@@ -285,12 +287,12 @@
 //! use degeneric_macros::{Degeneric};
 //! #[derive(Degeneric)]
 //! #[degeneric(trait = "pub(crate) trait Something")]
-//! struct Container<'a, T> {
+//! struct Container<'a, T: 'a> {
 //!     x: &'a T,
 //!     y: T,
 //! }
 //!
-//! let c = Container {
+//! let mut c = Container {
 //!     x: &(),
 //!     y: (),
 //! };
@@ -301,6 +303,8 @@
 //!     c.y();
 //!     c.y_mut();
 //! }
+//!
+//! accept_container(c);
 //! ```
 //!
 //! ```compile_fail
@@ -324,12 +328,19 @@
 //!
 //! # Add attributes everywhere!
 //!
-//! Here are some examples of the supported attributes:
+//! For some attributes, you can just add them on the field and they'll be forwarded to all getters automatically.
+//! Here's a list of such attributes:
+//! - `#[allow]`
+//! - `#[doc]`
+//! - `#[cfg(...)]`
+//! - `#[cfg_attr(...)]`
 //!
-//! - `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
-//! - `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
-//! - `#[degeneric(getter_decl_impl_attr = "#[doc = \"Getter declaration & implementation\"])]`
-//! - `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
+//! If you need more granularity, you can add attributes only on:
+//!
+//! - Trait declaration: `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
+//! - Trait impl block: `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
+//! - Field immutable getter implementation: `#[degeneric(getter_impl_attr = "#[doc = \"Getter implementation\"])]`
+//! - Field mutable getter declaration: `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
 //!
 //! ```compile_fail
 //! use degeneric_macros::Degeneric;
@@ -337,6 +348,7 @@
 //! #[derive(Degeneric)]
 //! #[degeneric(trait = "pub(crate) trait Something")]
 //! #[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
+//! /// This is documentation for the `Something` trait
 //! struct Container<T> {
 //!     x: T,
 //! }
@@ -352,15 +364,34 @@
 //! + [trait-set](https://lib.rs/trait-set) - shorten and DRY up trait bounds
 //! + [typed-builder](https://lib.rs/typed-builder) - generate a builder for your trait
 //! + [easy-ext](https://lib.rs/easy-ext) - extend your trait with more methods
-use proc_macro::TokenStream;
-use syn::parse_macro_input;
-use syn::ItemStruct;
 
-mod args;
+/// proc_macro_error unwrap
+macro_rules! pme_unwrap {
+    ($e:expr, $span:expr, $($args:expr),*) => {
+        {
+            match $e {
+                Ok(x) => x,
+                #[allow(unused)]
+                Err(err) => {
+                    proc_macro_error::abort!($span, $($args),*);
+                }
+            }
+        }
+    };
+}
+
+mod attribute;
 mod degeneric;
+mod field;
+mod generics;
 mod type_tools;
 
+use proc_macro::TokenStream;
+use proc_macro_error::proc_macro_error;
+use syn::parse_macro_input;
+
 #[proc_macro_derive(Degeneric, attributes(degeneric))]
+#[proc_macro_error]
 /// Usable only on structs.
 ///
 /// Example:
@@ -397,7 +428,7 @@ mod type_tools;
 /// }
 /// ```
 pub fn degeneric(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as ItemStruct);
+    let input = parse_macro_input!(input);
     let tokens = degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
     TokenStream::from(tokens)
 }
