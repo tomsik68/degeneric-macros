@@ -276,6 +276,8 @@ fn accept_container<C: Something>(c: C) {
     /// ERROR: dt doesn't have a getter!
     assert_eq!(c.dt(), format!("this won't have getter!"));
 }
+
+accept_container(c);
 ```
 
 ## Degeneric figures out mutability
@@ -287,12 +289,12 @@ references and skips generating mutable getter for them.
 use degeneric_macros::{Degeneric};
 #[derive(Degeneric)]
 #[degeneric(trait = "pub(crate) trait Something")]
-struct Container<'a, T> {
+struct Container<'a, T: 'a> {
     x: &'a T,
     y: T,
 }
 
-let c = Container {
+let mut c = Container {
     x: &(),
     y: (),
 };
@@ -303,6 +305,8 @@ fn accept_container<'a>(mut c: impl Something<'a>) {
     c.y();
     c.y_mut();
 }
+
+accept_container(c);
 ```
 
 ```compile_fail
@@ -326,12 +330,19 @@ fn accept_container<'a>(c: impl Something<'a>) {
 
 ## Add attributes everywhere!
 
-Here are some examples of the supported attributes:
+For some attributes, you can just add them on the field and they'll be forwarded to all getters automatically.
+Here's a list of such attributes:
+- `#[allow]`
+- `#[doc]`
+- `#[cfg(...)]`
+- `#[cfg_attr(...)]`
 
-- `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
-- `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
-- `#[degeneric(getter_decl_impl_attr = "#[doc = \"Getter declaration & implementation\"])]`
-- `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
+If you need more granularity, you can add attributes only on:
+
+- Trait declaration: `#[degeneric(trait_decl_attr = "#[doc = \"Trait declaration\"]")]`
+- Trait impl block: `#[degeneric(trait_impl_attr = "#[doc = \"Trait implementation\"]")]`
+- Field immutable getter implementation: `#[degeneric(getter_impl_attr = "#[doc = \"Getter implementation\"])]`
+- Field mutable getter declaration: `#[degeneric(mut_getter_decl_attr = "#[doc = \"Mutable Getter declaration\"])]`
 
 ```compile_fail
 use degeneric_macros::Degeneric;
@@ -339,6 +350,7 @@ use degeneric_macros::Degeneric;
 #[derive(Degeneric)]
 #[degeneric(trait = "pub(crate) trait Something")]
 #[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
+/// This is documentation for the `Something` trait
 struct Container<T> {
     x: T,
 }
