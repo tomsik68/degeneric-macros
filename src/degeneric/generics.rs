@@ -1,4 +1,4 @@
-use crate::type_tools::bound_to_associated_ty;
+use super::type_tools::bound_to_associated_ty;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{GenericParam, Generics, Ident, Type, TypeParam, WherePredicate};

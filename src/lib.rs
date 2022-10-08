@@ -380,11 +380,7 @@ macro_rules! pme_unwrap {
     };
 }
 
-mod attribute;
 mod degeneric;
-mod field;
-mod generics;
-mod type_tools;
 
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
@@ -429,6 +425,7 @@ use syn::parse_macro_input;
 /// ```
 pub fn degeneric(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
-    let tokens = degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
+    let tokens =
+        self::degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
     TokenStream::from(tokens)
 }

@@ -1,4 +1,4 @@
-use crate::type_tools::can_be_made_mutable;
+use super::type_tools::can_be_made_mutable;
 use darling::FromAttributes;
 use darling::{FromDeriveInput, Result, ToTokens};
 use proc_macro2::TokenStream;
@@ -8,9 +8,9 @@ use syn::spanned::Spanned;
 
 use syn::{Attribute, DeriveInput, Generics, Ident};
 
-use crate::attribute::*;
-use crate::field::*;
-use crate::generics::*;
+use super::attribute::*;
+use super::field::*;
+use super::generics::*;
 
 #[derive(FromDeriveInput)]
 #[darling(attributes(degeneric), supports(struct_named))]
