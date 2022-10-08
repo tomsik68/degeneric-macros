@@ -367,4 +367,39 @@ fn accept_container(c: impl Something) {}
 + [typed-builder](https://lib.rs/typed-builder) - generate a builder for your trait
 + [easy-ext](https://lib.rs/easy-ext) - extend your trait with more methods
 
+## CloneExt
+
+Apart from solving the dependency injection problem, degeneric also helps with cloning.
+There might be a situation where you're holding a non-cloneable type inside another type. In
+these situations, it might be possible to clone the value by different means.
+
+Failing example:
+
+```compile_fail
+
+#[derive(Default)]
+struct NonClone;
+
+#[derive(Clone)]
+struct Container {
+    nc: PhantomData<NonClone>,
+}
+```
+
+In such situations, one can resort to degeneric's CloneExt derive macro. Currently, it
+offers a single attribute to adjust the way fields are cloned:
+
+```rust
+#[derive(Default)]
+struct NonClone;
+
+#[derive(Default, degeneric_macros::CloneExt)]
+struct Container {
+    #[degeneric(clone_behavior(call_function="Default::default"))]
+    nc: NonClone,
+}
+
+Container::default().clone();
+```
+
 License: MIT

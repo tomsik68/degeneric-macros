@@ -1,5 +1,5 @@
-use crate::attribute::Attrs;
-use crate::type_tools::{make_reference, to_associated_ty};
+use super::attribute::Attrs;
+use super::type_tools::{make_reference, to_associated_ty};
 use darling::FromField;
 use quote::format_ident;
 use syn::spanned::Spanned;

@@ -364,6 +364,41 @@
 //! + [trait-set](https://lib.rs/trait-set) - shorten and DRY up trait bounds
 //! + [typed-builder](https://lib.rs/typed-builder) - generate a builder for your trait
 //! + [easy-ext](https://lib.rs/easy-ext) - extend your trait with more methods
+//!
+//! # CloneExt
+//!
+//! Apart from solving the dependency injection problem, degeneric also helps with cloning.
+//! There might be a situation where you're holding a non-cloneable type inside another type. In
+//! these situations, it might be possible to clone the value by different means.
+//!
+//! Failing example:
+//!
+//! ```compile_fail
+//!
+//! #[derive(Default)]
+//! struct NonClone;
+//!
+//! #[derive(Clone)]
+//! struct Container {
+//!     nc: PhantomData<NonClone>,
+//! }
+//! ```
+//!
+//! In such situations, one can resort to degeneric's CloneExt derive macro. Currently, it
+//! offers a single attribute to adjust the way fields are cloned:
+//!
+//! ```
+//! #[derive(Default)]
+//! struct NonClone;
+//!
+//! #[derive(Default, degeneric_macros::CloneExt)]
+//! struct Container {
+//!     #[degeneric(clone_behavior(call_function="Default::default"))]
+//!     nc: NonClone,
+//! }
+//!
+//! Container::default().clone();
+//! ```
 
 /// proc_macro_error unwrap
 macro_rules! pme_unwrap {
@@ -380,11 +415,8 @@ macro_rules! pme_unwrap {
     };
 }
 
-mod attribute;
+mod clone_ext;
 mod degeneric;
-mod field;
-mod generics;
-mod type_tools;
 
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
@@ -429,6 +461,47 @@ use syn::parse_macro_input;
 /// ```
 pub fn degeneric(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
-    let tokens = degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
+    let tokens =
+        self::degeneric::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
+    TokenStream::from(tokens)
+}
+
+#[proc_macro_derive(CloneExt, attributes(degeneric))]
+#[proc_macro_error]
+/// There might be a situation where you're holding a non-cloneable type inside another type. In
+/// these situations, it might be possible to clone the value by different means.
+///
+/// Failing example:
+///
+/// ```compile_fail
+///
+/// #[derive(Default)]
+/// struct NonClone;
+///
+/// #[derive(Clone)]
+/// struct Container {
+///     nc: PhantomData<NonClone>,
+/// }
+/// ```
+///
+/// In such situations, one can resort to degeneric's CloneExt derive macro. Currently, it
+/// offers a single attribute to adjust the way fields are cloned:
+///
+/// ```
+/// #[derive(Default)]
+/// struct NonClone;
+///
+/// #[derive(Default, degeneric_macros::CloneExt)]
+/// struct Container {
+///     #[degeneric(clone_behavior(call_function="Default::default"))]
+///     nc: NonClone,
+/// }
+///
+/// Container::default().clone();
+/// ```
+pub fn clone_ext(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input);
+    let tokens =
+        self::clone_ext::process_struct(&input).unwrap_or_else(|err| err.to_compile_error());
     TokenStream::from(tokens)
 }
