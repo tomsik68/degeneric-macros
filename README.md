@@ -395,7 +395,7 @@ struct NonClone;
 
 #[derive(Default, degeneric_macros::CloneExt)]
 struct Container {
-    #[degeneric(clone_behavior(call_function="Default::default"))]
+    #[clone_ext(clone_behavior(call_function="Default::default"))]
     nc: NonClone,
 }
 
