@@ -393,7 +393,7 @@
 //!
 //! #[derive(Default, degeneric_macros::CloneExt)]
 //! struct Container {
-//!     #[degeneric(clone_behavior(call_function="Default::default"))]
+//!     #[clone_ext(clone_behavior(call_function="Default::default"))]
 //!     nc: NonClone,
 //! }
 //!
@@ -466,7 +466,7 @@ pub fn degeneric(input: TokenStream) -> TokenStream {
     TokenStream::from(tokens)
 }
 
-#[proc_macro_derive(CloneExt, attributes(degeneric))]
+#[proc_macro_derive(CloneExt, attributes(clone_ext))]
 #[proc_macro_error]
 /// There might be a situation where you're holding a non-cloneable type inside another type. In
 /// these situations, it might be possible to clone the value by different means.
@@ -493,7 +493,7 @@ pub fn degeneric(input: TokenStream) -> TokenStream {
 ///
 /// #[derive(Default, degeneric_macros::CloneExt)]
 /// struct Container {
-///     #[degeneric(clone_behavior(call_function="Default::default"))]
+///     #[clone_ext(clone_behavior(call_function="Default::default"))]
 ///     nc: NonClone,
 /// }
 ///
