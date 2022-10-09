@@ -19,7 +19,7 @@ enum CloneBehavior {
 }
 
 #[derive(FromField)]
-#[darling(attributes(degeneric))]
+#[darling(attributes(clone_ext))]
 struct FieldToClone {
     ident: Option<Ident>,
 
@@ -28,7 +28,7 @@ struct FieldToClone {
 }
 
 #[derive(FromDeriveInput)]
-#[darling(attributes(degeneric), supports(struct_named))]
+#[darling(attributes(clone_ext))]
 struct CloneExt {
     ident: Ident,
     generics: Generics,
