@@ -221,6 +221,24 @@
 //! commit_transaction(cont);
 //! ```
 //!
+//! ## Degeneric + dynamize
+//!
+//! Degeneric supports dynamizing the generated trait. How does that work?
+//!
+//! Here's a minimal example on how to dynamize the generated trait:
+//!
+//! ```
+//! #[derive(Degeneric)]
+//! #[degeneric(dynamize, trait = "pub trait GeneratedContainerTrait")]
+//! struct Container<T: Any> {
+//!     item: T,
+//! }
+//! ```
+//!
+//! By convention, dynamize generates a `DynGeneratedContainerTrait` where the types are boxed.
+//! Please refer to [dynamize documentation](https://docs.rs/dynamize/latest/dynamize/#dynamize)
+//! for more information.
+//!
 //! # Degeneric understands where clause
 //!
 //! ```

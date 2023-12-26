@@ -1,4 +1,5 @@
 mod attribute;
+mod dynamize;
 mod entrypoint;
 mod field;
 mod generics;

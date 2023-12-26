@@ -30,6 +30,9 @@ struct Degeneric {
     #[darling(multiple)]
     trait_impl_attr: Vec<Attrs>,
 
+    #[darling(default)]
+    dynamize: Option<()>,
+
     data: darling::ast::Data<darling::util::Ignored, FieldDecl>,
 }
 
@@ -49,7 +52,6 @@ impl ToTokens for Degeneric {
         let associated_types_idents: Result<Vec<_>> = self
             .generics
             .type_params()
-            .into_iter()
             .map(|tp| Ok((tp, DegenericTypeAttrs::from_attributes(&tp.attrs)?)))
             .filter(|res| match res {
                 Ok((_, attrs)) => attrs.preserve.is_none(),
@@ -71,9 +73,14 @@ impl ToTokens for Degeneric {
         let associated_types: Vec<_> = self
             .generics
             .type_params()
-            .into_iter()
             .map(|tp| AssociatedType::from((tp, generics, &associated_types_idents)))
             .collect();
+
+        let dynamize = if self.dynamize.is_some() {
+            super::dynamize::emit_dynamize(&associated_types).into_token_stream()
+        } else {
+            quote! {}.into_token_stream()
+        };
 
         let associated_types_impl: Vec<_> = associated_types
             .iter()
@@ -138,6 +145,7 @@ impl ToTokens for Degeneric {
 
             #(#attrs)*
             #(#trait_decl_attr)*
+            #dynamize
             #decl #trait_generics {
                 #(#associated_types)*
 
