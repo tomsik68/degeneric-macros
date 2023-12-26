@@ -8,6 +8,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: icepuma/rust-action@master
-        with:
-          args: cargo fmt -- --check && cargo clippy -- -Dwarnings && cargo test
+      - name: Setup Rust toolchain with caching
+        uses: brndnmtthws/rust-action@v1
+      - run: cargo fmt -- --check
+      - run: cargo clippy -- -Dwarnings
+      - run: cargo test

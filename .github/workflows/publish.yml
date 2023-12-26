@@ -10,8 +10,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: icepuma/rust-action@master
+      - name: Setup Rust toolchain with caching
+        uses: brndnmtthws/rust-action@v1
+      - run: cargo test
+      - run: cargo login $CRATES_IO_TOKEN && cargo publish
         env:
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-        with:
-          args: cargo login $CRATES_IO_TOKEN && cargo build && cargo test && cargo publish
