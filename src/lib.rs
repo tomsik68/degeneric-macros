@@ -228,9 +228,11 @@
 //! Here's a minimal example on how to dynamize the generated trait:
 //!
 //! ```
+//! use degeneric_macros::Degeneric;
+//!
 //! #[derive(Degeneric)]
 //! #[degeneric(dynamize, trait = "pub trait GeneratedContainerTrait")]
-//! struct Container<T: Any> {
+//! struct Container<T: std::any::Any> {
 //!     item: T,
 //! }
 //! ```
