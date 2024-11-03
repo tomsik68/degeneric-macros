@@ -15,7 +15,7 @@
 //! trait_set!(trait FactoryFn<T> = 'static + Send + Sync + Fn() -> T);
 //!
 //! #[derive(Degeneric, TypedBuilder)]
-//! #[degeneric(trait = "pub trait ContainerTrait")]
+//! #[degeneric(trait_decl = "pub trait ContainerTrait")]
 //! /// This is doc for ContainerTrait!
 //! struct Container<T: Default, A: FactoryFn<T>, B> {
 //!     a: A,
@@ -74,7 +74,7 @@
 //! use degeneric_macros::Degeneric;
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub trait ContainerTrait")]
+//! #[degeneric(trait_decl = "pub trait ContainerTrait")]
 //! struct Container<Logger, HttpClient> {
 //!     logger: Logger,
 //!     client: HttpClient,
@@ -104,7 +104,7 @@
 //! use typed_builder::TypedBuilder;
 //!
 //! #[derive(Degeneric, TypedBuilder)]
-//! #[degeneric(trait = "trait ContainerTrait")]
+//! #[degeneric(trait_decl = "trait ContainerTrait")]
 //! struct Container<'a, T: 'a + PartialEq<i32> + Debug> {
 //!     cow: &'a Cow<'a, str>,
 //!     reference: &'a T,
@@ -201,7 +201,7 @@
 //! // end galemu
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub trait ContainerTrait")]
+//! #[degeneric(trait_decl = "pub trait ContainerTrait")]
 //! struct Container<T: GCon> {
 //!     conn: T,
 //! }
@@ -231,7 +231,7 @@
 //! use degeneric_macros::Degeneric;
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(dynamize, trait = "pub trait GeneratedContainerTrait")]
+//! #[degeneric(dynamize, trait_decl = "pub trait GeneratedContainerTrait")]
 //! struct Container<T: std::any::Any> {
 //!     item: T,
 //! }
@@ -279,7 +279,7 @@
 //! use std::fmt::Debug;
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub trait ContainerTrait")]
+//! #[degeneric(trait_decl = "pub trait ContainerTrait")]
 //! struct Container<T> where T: Default + Debug + PartialEq {
 //!     item: T,
 //! }
@@ -306,7 +306,7 @@
 //! use degeneric_macros::{Degeneric};
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub(crate) trait Something")]
+//! #[degeneric(trait_decl = "pub(crate) trait Something")]
 //! struct Container<'a, T: 'a, S: 'a> {
 //!     item: &'a T,
 //!     item2: S,
@@ -336,7 +336,7 @@
 //! ```
 //! use degeneric_macros::{Degeneric};
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub(crate) trait Something")]
+//! #[degeneric(trait_decl = "pub(crate) trait Something")]
 //! struct Container<'a, T: 'a> {
 //!     x: &'a T,
 //!     y: T,
@@ -361,7 +361,7 @@
 //! use degeneric_macros::{Degeneric};
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub(crate) trait Something")]
+//! #[degeneric(trait_decl = "pub(crate) trait Something")]
 //! struct Container<'a, T> {
 //!     x: &'a T,
 //! }
@@ -396,7 +396,7 @@
 //! use degeneric_macros::Degeneric;
 //!
 //! #[derive(Degeneric)]
-//! #[degeneric(trait = "pub(crate) trait Something")]
+//! #[degeneric(trait_decl = "pub(crate) trait Something")]
 //! #[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
 //! /// This is documentation for the `Something` trait
 //! struct Container<T> {
@@ -484,7 +484,7 @@ use syn::parse_macro_input;
 /// use std::fmt::Debug;
 ///
 /// #[derive(Degeneric)]
-/// #[degeneric(trait = "trait ContainerTrait")]
+/// #[degeneric(trait_decl = "trait ContainerTrait")]
 /// // attribute for both trait declaration and trait impl
 /// #[degeneric(trait_impl_attr = "#[cfg(not(foo))]")]
 /// /// ContainerTrait contains the implementation of `A` and `B` types.

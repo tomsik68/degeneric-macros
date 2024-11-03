@@ -22,7 +22,6 @@ struct Degeneric {
     ident: Ident,
     generics: Generics,
 
-    #[darling(rename = "trait")]
     trait_decl: Option<TraitDecl>,
 
     attrs: Vec<Attribute>,
