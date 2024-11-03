@@ -20,7 +20,7 @@ struct Degeneric {
     generics: Generics,
 
     #[darling(rename = "trait")]
-    trait_decl: TraitDecl,
+    trait_decl: Option<TraitDecl>,
 
     attrs: Vec<Attribute>,
 
@@ -33,18 +33,19 @@ struct Degeneric {
     #[darling(default)]
     dynamize: Option<()>,
 
+    #[darling(default)]
+    haz: Option<()>,
+
     data: darling::ast::Data<darling::util::Ignored, FieldDecl>,
 }
 
 impl ToTokens for Degeneric {
     fn to_tokens(&self, ts: &mut TokenStream) {
-        let decl = &self.trait_decl;
         let trait_decl_attr = &self.trait_decl_attr;
         let trait_impl_attr = &self.trait_impl_attr;
         let attrs = &self.attrs;
         let generics = &self.generics;
         let trait_generics = TraitGenerics::from(generics);
-        let trait_name = &self.trait_decl.ident;
         let ident = &self.ident;
         let (impl_generics, tys, where_clause) = generics.split_for_impl();
         let (_, trait_ty_generics, _) = trait_generics.0.split_for_impl();
@@ -141,30 +142,62 @@ impl ToTokens for Degeneric {
             .map(|f| f.implement_mut_getter(&associated_types_idents))
             .collect();
 
+        let haz_impls: Vec<_> = self
+            .data
+            .as_ref()
+            .take_struct()
+            .as_ref()
+            .unwrap()
+            .iter()
+            .filter(|_| self.haz.is_some())
+            .filter(|f| f.no_getter.is_none())
+            .map(|f| {
+                let field = &f;
+                let field_ident = &field.ident;
+                let field_ty = &field.ty;
+
+                quote! {
+                    #[automatically_derived]
+                    impl #impl_generics ::haz::Has<#field_ty> for #ident #tys #where_clause {
+                        fn access(&self) -> &#field_ty {
+                            &self.#field_ident
+                        }
+                    }
+                }
+            })
+            .collect();
+
+        if let Some(decl) = self.trait_decl.as_ref() {
+            let trait_name = &decl.ident;
+
+            ts.extend(quote! {
+
+                #(#attrs)*
+                #(#trait_decl_attr)*
+                #dynamize
+                #decl #trait_generics {
+                    #(#associated_types)*
+
+                    #(#getter_decls)*
+
+                    #(#mut_getter_decls)*
+                }
+
+                #(#attrs)*
+                #(#trait_impl_attr)*
+                #[automatically_derived]
+                impl #impl_generics #trait_name #trait_ty_generics for #ident #tys #where_clause {
+
+                    #(#associated_types_impl)*
+
+                    #(#getter_impls)*
+                    #(#mut_getter_impls)*
+                }
+            });
+        }
+
         ts.extend(quote! {
-
-            #(#attrs)*
-            #(#trait_decl_attr)*
-            #dynamize
-            #decl #trait_generics {
-                #(#associated_types)*
-
-                #(#getter_decls)*
-
-                #(#mut_getter_decls)*
-            }
-
-            #(#attrs)*
-            #(#trait_impl_attr)*
-            #[automatically_derived]
-            impl #impl_generics #trait_name #trait_ty_generics for #ident #tys #where_clause {
-
-                #(#associated_types_impl)*
-
-                #(#getter_impls)*
-                #(#mut_getter_impls)*
-            }
-
+            #(#haz_impls)*
         });
     }
 }

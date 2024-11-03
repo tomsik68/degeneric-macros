@@ -2,7 +2,7 @@
 name = "degeneric-macros"
 authors = ["Tomas Jasek <tomsik68@posteo.net>"]
 description = "Hides struct generics into trait associated types"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2018"
 license = "MIT"
 keywords = ["dependency-injection", "generics", "injection", "di"]
@@ -27,3 +27,4 @@ trait-set = "0.3.0"
 typed-builder = "0.13.0"
 galemu = "0.2.3"
 dynamize = "0.3.5"
+haz = "0.1.1"

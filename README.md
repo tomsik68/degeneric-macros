@@ -230,9 +230,11 @@ Degeneric supports dynamizing the generated trait. How does that work?
 Here's a minimal example on how to dynamize the generated trait:
 
 ```rust
+use degeneric_macros::Degeneric;
+
 #[derive(Degeneric)]
 #[degeneric(dynamize, trait = "pub trait GeneratedContainerTrait")]
-struct Container<T: Any> {
+struct Container<T: std::any::Any> {
     item: T,
 }
 ```
@@ -240,6 +242,29 @@ struct Container<T: Any> {
 By convention, dynamize generates a `DynGeneratedContainerTrait` where the types are boxed.
 Please refer to [dynamize documentation](https://docs.rs/dynamize/latest/dynamize/#dynamize)
 for more information.
+
+### Degeneric + haz
+
+Degeneric is able to serve as a derive macro for the excellent
+[`haz`](https://crates.io/crates/haz) crate.
+
+```rust
+use degeneric_macros::Degeneric;
+use haz::Has;
+
+
+ #[derive(Degeneric, Default)]
+ #[degeneric(haz)]
+ struct Config {
+   host: Host,
+   port: Port,
+   verbosity: Verbosity,
+   restriction: Restriction,
+ }
+
+ fn assert_has_all_the_things<T: Has<Host> + Has<Port> + Has<Verbosity> + Has<Restriction>>(_: T) {}
+ assert_has_all_the_things(Config::default());
+```
 
 ## Degeneric understands where clause
 
