@@ -13,8 +13,11 @@ use super::field::*;
 use super::generics::*;
 
 #[derive(FromDeriveInput)]
-#[darling(attributes(degeneric), supports(struct_named))]
-#[darling(attributes(degeneric), forward_attrs(allow, cfg, cfg_attr, doc))]
+#[darling(
+    attributes(degeneric),
+    supports(struct_named),
+    forward_attrs(allow, cfg, cfg_attr, doc)
+)]
 struct Degeneric {
     ident: Ident,
     generics: Generics,
