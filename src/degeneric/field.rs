@@ -43,7 +43,7 @@ impl FieldDecl {
             "unable to turn the type into a reference: {err}"
         );
 
-        TraitItem::Method(syn::parse_quote! {
+        TraitItem::Fn(syn::parse_quote! {
             #( #attrs )*
             #( #docs )*
             fn #name (&self) -> #return_type;
@@ -63,7 +63,7 @@ impl FieldDecl {
             "unable to turn the type into a reference: {err}"
         );
 
-        TraitItem::Method(syn::parse_quote! {
+        TraitItem::Fn(syn::parse_quote! {
             #( #attrs )*
             #( #docs )*
             fn #name (&self) -> #return_type {
@@ -85,7 +85,7 @@ impl FieldDecl {
             "unable to turn the type into a reference: {err}"
         );
 
-        TraitItem::Method(syn::parse_quote! {
+        TraitItem::Fn(syn::parse_quote! {
             #( #attrs )*
             #( #docs )*
             fn #name (&mut self) -> #return_type;
@@ -106,7 +106,7 @@ impl FieldDecl {
             "unable to turn the type into a reference: {err}"
         );
 
-        TraitItem::Method(syn::parse_quote! {
+        TraitItem::Fn(syn::parse_quote! {
             #( #attrs )*
             #( #docs )*
             fn #name (&mut self) -> #return_type {

@@ -189,7 +189,7 @@ fn path_to_associated_ty(path: Path, generic_idents: &[&Ident]) -> Path {
     if path.segments.len() == 1 {
         let first_segment = path.segments.first().unwrap();
         if generic_idents.iter().any(|id| **id == first_segment.ident) {
-            let mut segments = Punctuated::<PathSegment, syn::token::Colon2>::new();
+            let mut segments = Punctuated::<PathSegment, syn::Token![::]>::new();
             segments.push(PathSegment {
                 ident: format_ident!("Self"),
                 arguments: PathArguments::None,

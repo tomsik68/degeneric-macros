@@ -17,7 +17,7 @@ use typed_builder::TypedBuilder;
 trait_set!(trait FactoryFn<T> = 'static + Send + Sync + Fn() -> T);
 
 #[derive(Degeneric, TypedBuilder)]
-#[degeneric(trait = "pub trait ContainerTrait")]
+#[degeneric(trait_decl = "pub trait ContainerTrait")]
 /// This is doc for ContainerTrait!
 struct Container<T: Default, A: FactoryFn<T>, B> {
     a: A,
@@ -76,7 +76,7 @@ this:
 use degeneric_macros::Degeneric;
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub trait ContainerTrait")]
+#[degeneric(trait_decl = "pub trait ContainerTrait")]
 struct Container<Logger, HttpClient> {
     logger: Logger,
     client: HttpClient,
@@ -106,7 +106,7 @@ use degeneric_macros::{Degeneric};
 use typed_builder::TypedBuilder;
 
 #[derive(Degeneric, TypedBuilder)]
-#[degeneric(trait = "trait ContainerTrait")]
+#[degeneric(trait_decl = "trait ContainerTrait")]
 struct Container<'a, T: 'a + PartialEq<i32> + Debug> {
     cow: &'a Cow<'a, str>,
     reference: &'a T,
@@ -203,7 +203,7 @@ impl GTran for TransWrap {
 // end galemu
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub trait ContainerTrait")]
+#[degeneric(trait_decl = "pub trait ContainerTrait")]
 struct Container<T: GCon> {
     conn: T,
 }
@@ -230,9 +230,11 @@ Degeneric supports dynamizing the generated trait. How does that work?
 Here's a minimal example on how to dynamize the generated trait:
 
 ```rust
+use degeneric_macros::Degeneric;
+
 #[derive(Degeneric)]
-#[degeneric(dynamize, trait = "pub trait GeneratedContainerTrait")]
-struct Container<T: Any> {
+#[degeneric(dynamize, trait_decl = "pub trait GeneratedContainerTrait")]
+struct Container<T: std::any::Any> {
     item: T,
 }
 ```
@@ -241,6 +243,29 @@ By convention, dynamize generates a `DynGeneratedContainerTrait` where the types
 Please refer to [dynamize documentation](https://docs.rs/dynamize/latest/dynamize/#dynamize)
 for more information.
 
+### Degeneric + haz
+
+Degeneric is able to serve as a derive macro for the excellent
+[`haz`](https://crates.io/crates/haz) crate.
+
+```rust
+use degeneric_macros::Degeneric;
+use haz::Has;
+
+
+ #[derive(Degeneric, Default)]
+ #[degeneric(haz)]
+ struct Config {
+   host: Host,
+   port: Port,
+   verbosity: Verbosity,
+   restriction: Restriction,
+ }
+
+ fn assert_has_all_the_things<T: Has<Host> + Has<Port> + Has<Verbosity> + Has<Restriction>>(_: T) {}
+ assert_has_all_the_things(Config::default());
+```
+
 ## Degeneric understands where clause
 
 ```rust
@@ -248,7 +273,7 @@ use degeneric_macros::{Degeneric};
 use std::fmt::Debug;
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub trait ContainerTrait")]
+#[degeneric(trait_decl = "pub trait ContainerTrait")]
 struct Container<T> where T: Default + Debug + PartialEq {
     item: T,
 }
@@ -275,7 +300,7 @@ The `no_getter` attribute can be used to skip generating a getter.
 use degeneric_macros::{Degeneric};
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub(crate) trait Something")]
+#[degeneric(trait_decl = "pub(crate) trait Something")]
 struct Container<'a, T: 'a, S: 'a> {
     item: &'a T,
     item2: S,
@@ -305,7 +330,7 @@ references and skips generating mutable getter for them.
 ```rust
 use degeneric_macros::{Degeneric};
 #[derive(Degeneric)]
-#[degeneric(trait = "pub(crate) trait Something")]
+#[degeneric(trait_decl = "pub(crate) trait Something")]
 struct Container<'a, T: 'a> {
     x: &'a T,
     y: T,
@@ -330,7 +355,7 @@ accept_container(c);
 use degeneric_macros::{Degeneric};
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub(crate) trait Something")]
+#[degeneric(trait_decl = "pub(crate) trait Something")]
 struct Container<'a, T> {
     x: &'a T,
 }
@@ -365,7 +390,7 @@ If you need more granularity, you can add attributes only on:
 use degeneric_macros::Degeneric;
 
 #[derive(Degeneric)]
-#[degeneric(trait = "pub(crate) trait Something")]
+#[degeneric(trait_decl = "pub(crate) trait Something")]
 #[degeneric(trait_decl_impl_attr = "#[cfg(foo)]")]
 /// This is documentation for the `Something` trait
 struct Container<T> {
