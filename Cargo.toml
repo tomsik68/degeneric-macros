@@ -24,7 +24,7 @@ proc-macro-error = "1"
 
 [dev-dependencies]
 trait-set = "0.3.0"
-typed-builder = "0.20.0"
+typed-builder = "0.21.0"
 galemu = "0.2.3"
 dynamize = "0.3.5"
 haz = "0.1.1"
